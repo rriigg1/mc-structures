@@ -6,9 +6,15 @@ Try it now: [Github-Pages](https://rriigg1.github.io/mc-structures/)
 
 ### Current features:
 - Upload your own structure file
-- Currently only full blocks are displayed and all sides are using the same texture
+- Most blocks should work
+
+### Known issues:
+- Transparency issues
+- UV-Locking not working (seen at the edges of stairs)
+- Flickering at certain zoom levels in certain angles
+- UVs maybe flipped in some cases
 
 ### Planned:
-- Support for blocks with different textures per side (logs, furnace, ...)
-- Support for non full blocks
+- Support for tinted blocks like leaves or grass
+- Support for certain missing blocks like beds
 - Selection of resource pack

@@ -1,49 +1,43 @@
 import { useContext, useMemo } from "react"
-import * as THREE from "three"
 import InstancedBlocks from "./instancing/InstancedBlocks"
-import { Block } from "../types/Block"
+import { Block, PaletteBlock } from "../types/Block"
 import { ResourcePackContext } from "../app/providers/ResourcePackProvider"
 import { groupBlocks } from "../minecraft/blocks/groupBlocks"
-import { resolveTexture } from "../minecraft/resourcepack/textureResolver"
 
 type Props = {
   blocks: Block[]
+  palette?: Record<number, PaletteBlock>
 }
 
-export default function StructureRenderer({ blocks }: Props) {
+export default function StructureRenderer({ blocks, palette }: Props) {
   const groups = groupBlocks(blocks)
-  const textures = useContext(ResourcePackContext)
+  const resourcePack = useContext(ResourcePackContext)
 
-  const textureMap = useMemo(() => {
-    if (!textures) return {}
+  const filteredGroups = useMemo(() => {
+    const result: Record<number, Block[]> = {}
+    for (const [paletteIndex, groupBlocks] of Object.entries(groups)) {
+      const paletteEntry = palette ? palette[parseInt(paletteIndex)] : undefined
+      if (paletteEntry) {
+        result[parseInt(paletteIndex)] = groupBlocks
+      }
+    }
+    return result
+  }, [groups, palette])
 
-    const loader = new THREE.TextureLoader()
-    const map: Record<string, THREE.Texture> = {}
-
-    Object.keys(groups).forEach((blockName) => {
-        const url = resolveTexture(blockName, textures)
-        const tex = loader.load(url)
-        tex.magFilter = THREE.NearestFilter
-        tex.minFilter = THREE.NearestFilter
-        map[blockName] = tex
-    })
-
-    return map
-    }, [textures, groups])
+  if (!palette) {
+    return null
+  }
 
   return (
     <>
-      {Object.entries(groups).map(([blockName, groupBlocks]) => {
-        if (!textures) return null
-
-        const texture = textureMap[blockName];
-        if (!texture) return null
+      {Object.entries(filteredGroups).map(([paletteIndex, groupBlocks]) => {
+        if (!resourcePack) return null
 
         return (
           <InstancedBlocks
-            key={blockName}
+            key={paletteIndex}
             blocks={groupBlocks}
-            texture={texture}
+            paletteBlock={palette[parseInt(paletteIndex)]}
           />
         )
       })}
