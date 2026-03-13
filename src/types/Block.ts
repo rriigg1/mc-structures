@@ -1,5 +1,3 @@
-import { string } from "prismarine-nbt"
-
 export type Block = {
   x: number
   y: number
@@ -24,5 +22,6 @@ export type BlockElement = {
   faces: Record<string, {
     texture: string
     uv?: [number, number, number, number]
+    tintindex?: number
   }>
 }

@@ -1,4 +1,4 @@
-import { useRef, useEffect, useContext } from "react"
+import { useRef, useEffect, useContext, useMemo } from "react"
 import * as THREE from "three"
 import { Block, PaletteBlock, BlockElement } from "../../types/Block"
 import { ResourcePackContext } from "../../app/providers/ResourcePackProvider"
@@ -16,6 +16,7 @@ type RenderElement = {
   }
   textures: Record<string, string | undefined>
   uvs: Record<string, [number, number, number, number] | undefined>
+  tinted: Record<string, boolean>
   modelRotation: {
     x?: number
     y?: number
@@ -28,6 +29,25 @@ type InstancedBlocksProps = {
   paletteBlock: PaletteBlock
 }
 
+// for now use a set of transparent blocknames to determine if the material should be transparent, in the future this should be determined by the resource pack data
+const transparentBlockNames = new Set([
+  "water",
+  "glass",
+  "ice",
+  "leaves",
+  "slime_block",
+  "honey_block",
+  "stained_glass",
+  "stained_glass_pane",
+  "glass_pane",
+  "grass",
+  "fern",
+  "dead_bush",
+  "tall_grass",
+  "large_fern",
+])
+
+
 export default function InstancedBlocks({
   blocks,
   paletteBlock,
@@ -35,6 +55,13 @@ export default function InstancedBlocks({
 
   const refs = useRef(new Map<number, THREE.InstancedMesh>())
   const resourcePack = useContext(ResourcePackContext)
+
+  const emptyTexture = useMemo(() => {
+    return new THREE.TextureLoader().load("empty_texture.png", (data) => {
+      data.magFilter = THREE.NearestFilter
+      data.minFilter = THREE.NearestFilter
+    });
+  }, []);
 
   useEffect(() => {
     const matrix = new THREE.Matrix4()
@@ -129,12 +156,12 @@ export default function InstancedBlocks({
           }
           : undefined,
         textures: {
-          "west": undefined,
           "east": undefined,
+          "west": undefined,
           "up": undefined,
           "down": undefined,
-          "north": undefined,
           "south": undefined,
+          "north": undefined,
         },
         uvs: {
           "east": undefined,
@@ -143,6 +170,14 @@ export default function InstancedBlocks({
           "down": undefined,
           "south": undefined,
           "north": undefined,
+        },
+        tinted: {
+          "east": false,
+          "west": false,
+          "up": false,
+          "down": false,
+          "south": false,
+          "north": false,
         },
         modelRotation
       }
@@ -169,7 +204,11 @@ export default function InstancedBlocks({
         if (face.uv) {
           renderElement.uvs[faceName] = face.uv
         }
+        if (face.tintindex != undefined) {
+          renderElement.tinted[faceName] = true
+        }
       }
+
       renderData.push(renderElement)
     }
   }
@@ -177,36 +216,19 @@ export default function InstancedBlocks({
   return (
     <>
       {renderData.map((element: RenderElement, index: number) => {
-        const textures = Object.values(element.textures)
-            .map(tex => tex
-              ? new THREE.TextureLoader().load(tex, (data) => {
-                  data.magFilter = THREE.NearestFilter
-                  data.minFilter = THREE.NearestFilter
-
-                  if (data.height > data.width) {
-                    data.repeat.set(1, data.width / data.height)
-                  }
-                })
-              : null)
-        
         const geometry = new THREE.BoxGeometry(element.size[0], element.size[1], element.size[2])
-        geometry.translate(element.pos[0], element.pos[1], element.pos[2])
-        // block and not element should be centered a 0
-        geometry.translate(element.size[0] / 2, element.size[1] / 2, element.size[2] / 2)
-        geometry.translate(-0.5, -0.5, -0.5)
+        centerGeometry(element, geometry)
         applyRotations(element, geometry)
 
         // adjust uvs
         const uvAttribute = geometry.attributes.uv
         let faceCounter = 0
         for (const [faceName, face] of Object.entries(element.uvs)) {
-          if (!face) {
-            faceCounter += 1
-            continue
-          }
-          const [u1, v1, u2, v2] = face
+          const [u1, v1, u2, v2] = face ? face : [0, 0, 16, 16]
         
-          // Each face uses 4 vertices in the order: [0, 1, 2, 3]
+          // Each face uses 4 vertices in the order:
+          // 0 1
+          // 2 3
           for (let i = 0; i < 4; i++) {
             const u = (i === 0 || i === 2) ? u1 : u2
             const v = (i === 0 || i === 1) ? v1 : v2
@@ -215,7 +237,27 @@ export default function InstancedBlocks({
           faceCounter += 1
         }
 
-        const materials = textures.map(tex => new THREE.MeshStandardMaterial({ map: tex, transparent: true }))
+        const materials: THREE.MeshStandardMaterial[] = []
+
+        for (const faceName of ["east", "west", "up", "down", "south", "north"]) {
+          const url = element.textures[faceName]
+          const texture = url
+            ? new THREE.TextureLoader().load(url, (data) => {
+                data.magFilter = THREE.NearestFilter
+                data.minFilter = THREE.NearestFilter
+                if (data.height > data.width) {
+                    data.repeat.set(1, data.width / data.height)
+                }
+              })
+            : emptyTexture
+          
+          
+
+          const material = element.tinted[faceName]
+            ? new THREE.MeshStandardMaterial({ map: texture, transparent: false, alphaTest: 0.5, color: 0x60bb30 })
+            : new THREE.MeshStandardMaterial({ map: texture, transparent: false, alphaTest: 0.5 })
+          materials.push(material)
+        }
 
         return (
           <instancedMesh
@@ -228,6 +270,13 @@ export default function InstancedBlocks({
       })}
     </>
   )
+}
+
+function centerGeometry(element: RenderElement, geometry: THREE.BufferGeometry): void {
+  geometry.translate(element.pos[0], element.pos[1], element.pos[2])
+  // block and not element should be centered a 0
+  geometry.translate(element.size[0] / 2, element.size[1] / 2, element.size[2] / 2)
+  geometry.translate(-0.5, -0.5, -0.5)
 }
 
 function determineBlockState(resourceBlock: ResourceBlock, paletteBlock: PaletteBlock): any[] {

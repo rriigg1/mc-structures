@@ -14,12 +14,14 @@ ${\color{red}\huge{\textsf{Disclaimer: The code was written with the assistance 
 - Most blocks should work
 
 ### Known issues:
-- Transparency issues
-- UV-Locking not working (seen at the edges of stairs)
+- Blocks using multipart structure are not shown (fences)
+    - likely conditions are not checked correctly
 - Flickering at certain zoom levels in certain angles
+- Rotations of blocks are not always correct (buttons)
+- UV-Locking not working (seen at the edges of stairs)
 - UVs maybe flipped in some cases
+- Half-transparency not working correctly
 
 ### Planned:
-- Support for tinted blocks like leaves or grass
-- Support for certain missing blocks like beds
+- Support for tile-entities
 - Selection of resource pack
