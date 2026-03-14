@@ -298,9 +298,9 @@ function determineBlockState(resourceBlock: ResourceBlock, paletteBlock: Palette
     const matches = []
     for (const part of resourceBlock.blockStates.multipart) {
       if (!part.when) {
-        matches.push(part)
+        matches.push(part.apply)
       } else if (matchesProperties(part.when, paletteBlock.properties)) {
-        matches.push(part)
+        matches.push(part.apply)
       }
     }
     return matches

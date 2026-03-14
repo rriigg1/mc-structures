@@ -12,10 +12,12 @@ ${\color{red}\huge{\textsf{Disclaimer: The code was written with the assistance 
 ### Current features:
 - Upload your own structure file
 - Most blocks should work
+    - Full blocks
+    - Block variants
+    - Mulitpart blocks
+    - Tinted textures
 
 ### Known issues:
-- Blocks using multipart structure are not shown (fences)
-    - likely conditions are not checked correctly
 - Flickering at certain zoom levels in certain angles
 - Rotations of blocks are not always correct (buttons)
 - UV-Locking not working (seen at the edges of stairs)
