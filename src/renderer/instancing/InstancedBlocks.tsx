@@ -72,6 +72,8 @@ export default function InstancedBlocks({
         mesh.setMatrixAt(i, matrix)
       })
       mesh.instanceMatrix.needsUpdate = true
+      mesh.computeBoundingBox()
+      mesh.computeBoundingSphere()
     })
   }, [blocks])
 

@@ -18,8 +18,7 @@ ${\color{red}\huge{\textsf{Disclaimer: The code was written with the assistance 
     - Tinted textures
 
 ### Known issues:
-- Flickering at certain zoom levels in certain angles
-- Rotations of blocks are not always correct (buttons)
+- Rotations of blocks are not always correct (buttons, tripwire hooks, piston heads)
 - UV-Locking not working (seen at the edges of stairs)
 - UVs maybe flipped in some cases
 - Half-transparency not working correctly
