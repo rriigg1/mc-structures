@@ -17,6 +17,7 @@ type RenderElement = {
   textures: Record<string, string | undefined>
   uvs: Record<string, [number, number, number, number] | undefined>
   tinted: Record<string, boolean>
+  faceRotations: Record<string, number | undefined>
   modelRotation: {
     x?: number
     y?: number
@@ -181,6 +182,14 @@ export default function InstancedBlocks({
           "south": false,
           "north": false,
         },
+        faceRotations: {
+          "east": undefined,
+          "west": undefined,
+          "up": undefined,
+          "down": undefined,
+          "south": undefined,
+          "north": undefined,
+        },
         modelRotation
       }
       
@@ -209,6 +218,9 @@ export default function InstancedBlocks({
         if (face.tintindex != undefined) {
           renderElement.tinted[faceName] = true
         }
+        if (face.rotation) {
+          renderElement.faceRotations[faceName] = face.rotation
+        }
       }
 
       renderData.push(renderElement)
@@ -231,10 +243,20 @@ export default function InstancedBlocks({
           // Each face uses 4 vertices in the order:
           // 0 1
           // 2 3
+
+          const center: THREE.Vector2 = new THREE.Vector2((u1 + u2) / 32, 1 - (v1 + v2) / 32)
+
           for (let i = 0; i < 4; i++) {
             const u = (i === 0 || i === 2) ? u1 : u2
             const v = (i === 0 || i === 1) ? v1 : v2
-            uvAttribute.setXY(faceCounter * 4 + i, (u / 16), 1-(v / 16))
+            const xy: THREE.Vector2 = new THREE.Vector2(u / 16, 1 - (v / 16))
+
+            if (element.faceRotations[faceName]) {
+              xy.rotateAround(center, THREE.MathUtils.degToRad(element.faceRotations[faceName]!))
+            }
+            
+            uvAttribute.setXY(faceCounter * 4 + i, xy.x, xy.y)
+            uvAttribute.needsUpdate = true 
           }
           faceCounter += 1
         }
@@ -252,8 +274,6 @@ export default function InstancedBlocks({
                 }
               })
             : emptyTexture
-          
-          
 
           const material = element.tinted[faceName]
             ? new THREE.MeshStandardMaterial({ map: texture, transparent: false, alphaTest: 0.5, color: 0x60bb30 })
@@ -325,17 +345,28 @@ function matchesProperties(variantProperties: Record<string, string>, blockPrope
 
 function applyRotations(element: RenderElement, geometry: THREE.BufferGeometry): void {
   if (element.rotation) {
+    // Tranlate the element so that the rotation origin is at the world origin, apply the rotation, then translate back
+    const origin = new THREE.Vector3(element.rotation.origin[0] - 0.5, element.rotation.origin[1] - 0.5, element.rotation.origin[2] - 0.5)
+    geometry.translate(-origin.x, -origin.y, -origin.z)
+
     if (element.rotation.axis === "x") {
       geometry.rotateX(THREE.MathUtils.degToRad(element.rotation.angle))
     } else if (element.rotation.axis === "y") {
-      geometry.rotateY(-THREE.MathUtils.degToRad(element.rotation.angle))
+      geometry.rotateY(-THREE.MathUtils.degToRad(-element.rotation.angle))
     } else if (element.rotation.axis === "z") {
       geometry.rotateZ(THREE.MathUtils.degToRad(element.rotation.angle))
     }
+
+    geometry.translate(origin.x, origin.y, origin.z)
   }
 
   if (element.modelRotation) {
-    geometry.rotateX(THREE.MathUtils.degToRad(element.modelRotation.x ?? 0))
-    geometry.rotateY(THREE.MathUtils.degToRad(-(element.modelRotation.y ?? 0)))
+    const modelRoationMatrix = new THREE.Matrix4().makeRotationFromEuler(new THREE.Euler(
+      -THREE.MathUtils.degToRad(element.modelRotation.x ?? 0),
+      -THREE.MathUtils.degToRad(element.modelRotation.y ?? 0),
+      -THREE.MathUtils.degToRad(element.modelRotation.z ?? 0),
+      "YXZ"
+    ))
+    geometry.applyMatrix4(modelRoationMatrix)
   }
 }

@@ -18,9 +18,8 @@ ${\color{red}\huge{\textsf{Disclaimer: The code was written with the assistance 
     - Tinted textures
 
 ### Known issues:
-- Rotations of blocks are not always correct (buttons, tripwire hooks, piston heads)
 - UV-Locking not working (seen at the edges of stairs)
-- UVs maybe flipped in some cases
+- UVs maybe flipped or rotateted and stretched in some cases
 - Half-transparency not working correctly
 
 ### Planned:

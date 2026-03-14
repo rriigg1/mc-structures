@@ -23,5 +23,6 @@ export type BlockElement = {
     texture: string
     uv?: [number, number, number, number]
     tintindex?: number
+    rotation?: number
   }>
 }
