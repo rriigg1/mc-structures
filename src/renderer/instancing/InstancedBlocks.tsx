@@ -243,17 +243,15 @@ export default function InstancedBlocks({
           // Each face uses 4 vertices in the order:
           // 0 1
           // 2 3
-
-          const center: THREE.Vector2 = new THREE.Vector2((u1 + u2) / 32, 1 - (v1 + v2) / 32)
-
+          let order = [0, 1, 3, 2]
+          if (element.faceRotations[faceName] || true) {
+            const rotation = -(element.faceRotations[faceName] ?? 0) + 360
+            order = order.map(i => (i + rotation / 90) % 4)
+          }
           for (let i = 0; i < 4; i++) {
-            const u = (i === 0 || i === 2) ? u1 : u2
-            const v = (i === 0 || i === 1) ? v1 : v2
+            const u = (order[i] === 0 || order[i] === 3) ? u1 : u2
+            const v = (order[i] === 0 || order[i] === 1) ? v1 : v2
             const xy: THREE.Vector2 = new THREE.Vector2(u / 16, 1 - (v / 16))
-
-            if (element.faceRotations[faceName]) {
-              xy.rotateAround(center, THREE.MathUtils.degToRad(element.faceRotations[faceName]!))
-            }
             
             uvAttribute.setXY(faceCounter * 4 + i, xy.x, xy.y)
             uvAttribute.needsUpdate = true 

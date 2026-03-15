@@ -18,9 +18,8 @@ ${\color{red}\huge{\textsf{Disclaimer: The code was written with the assistance 
     - Tinted textures
 
 ### Known issues:
-- UV-Locking not working (seen at the edges of stairs)
-- UVs maybe flipped or rotateted and stretched in some cases
-- Half-transparency not working correctly
+- UV-Locking not working (seen at the edges of stairs or on buttons)
+- Half-transparency not working correctly (stained glass)
 
 ### Planned:
 - Support for tile-entities
