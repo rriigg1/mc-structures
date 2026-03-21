@@ -91,7 +91,7 @@ export function buildElementGeometry(element: RenderElement, textureMap: Map<str
             const isSide = faceName == "east" || faceName == "west" || faceName == "north" || faceName == "south"
             let angle = undefined
             if (isTopOrBottom && (!element.modelRotation.x || element.modelRotation.x == 180)) {
-                angle = element.modelRotation.y
+                angle = -(element.modelRotation.y ?? 0)
             } else if (isSide && (!element.modelRotation.x || element.modelRotation.x == 180)) {
                 angle = element.modelRotation.x
             } else if (isTopOrBottom && element.modelRotation.x == 90) {
