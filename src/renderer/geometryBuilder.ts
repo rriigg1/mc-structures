@@ -75,10 +75,10 @@ export function buildElementGeometry(element: RenderElement, textureMap: Map<str
         u1 /= 16; v1 /= 16; u2 /= 16; v2 /= 16
 
         let faceUVs = [
-            [1-u1, 1 - v1],
-            [1-u2, 1 - v1],
-            [1-u2, 1 - v2],
-            [1-u1, 1 - v2]]
+            [u2, 1 - v1],
+            [u1, 1 - v1],
+            [u1, 1 - v2],
+            [u2, 1 - v2]]
 
         // apply face rotation
         faceUVs = rotateUVs(faceUVs, element.faceRotations[faceName])
