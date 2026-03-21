@@ -25,7 +25,7 @@ export function Scene({children}: {children?: React.ReactNode}) {
                 <planeGeometry args={[100, 100]} />
                 <meshStandardMaterial color="green" />
             </mesh>
-            <Environment preset="forest" />
+            <Environment preset="forest" environmentIntensity={0.7} backgroundIntensity={0.7}/>
             <OrbitControls target={[3.5,2,3.5]}/>
             <Stats />
         </Canvas>
