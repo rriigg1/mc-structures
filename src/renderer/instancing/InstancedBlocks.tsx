@@ -1,53 +1,17 @@
 import { useRef, useEffect, useContext, useMemo } from "react"
 import * as THREE from "three"
-import { Block, PaletteBlock, BlockElement } from "../../types/Block"
+import { Block, PaletteBlock, BlockElement, RenderElement, FaceName, FACE_DEFS } from "../../types/Block"
 import { ResourcePackContext } from "../../app/providers/ResourcePackProvider"
 import { ResourceBlock } from "../../types/ResourceBlock"
 import { resolveTexture } from "../../minecraft/resourcepack/textureResolver"
+import { buildElementGeometry } from "../geometryBuilder"
 
-type RenderElement = {
-  pos: [number, number, number]
-  size: [number, number, number]
-  rotation?: {
-    origin: [number, number, number]
-    axis: "x" | "y" | "z"
-    angle: number
-    rescale?: boolean
-  }
-  textures: Record<string, string | undefined>
-  uvs: Record<string, [number, number, number, number] | undefined>
-  tinted: Record<string, boolean>
-  faceRotations: Record<string, number | undefined>
-  modelRotation: {
-    x?: number
-    y?: number
-    z?: number
-  }
-}
+
 
 type InstancedBlocksProps = {
   blocks: Block[]
   paletteBlock: PaletteBlock
 }
-
-// for now use a set of transparent blocknames to determine if the material should be transparent, in the future this should be determined by the resource pack data
-const transparentBlockNames = new Set([
-  "water",
-  "glass",
-  "ice",
-  "leaves",
-  "slime_block",
-  "honey_block",
-  "stained_glass",
-  "stained_glass_pane",
-  "glass_pane",
-  "grass",
-  "fern",
-  "dead_bush",
-  "tall_grass",
-  "large_fern",
-])
-
 
 export default function InstancedBlocks({
   blocks,
@@ -121,10 +85,11 @@ export default function InstancedBlocks({
       continue
     }
 
-    const modelRotation: {x: number | undefined, y:number | undefined, z:number | undefined} = {x: undefined, y: undefined, z: undefined}
+    const modelRotation: {x: number, y:number, z:number, uvlock: boolean} = {x: 0, y: 0, z: 0, uvlock: false}
     modelRotation.x = state.x ?? 0
     modelRotation.y = state.y ?? 0
     modelRotation.z = state.z ?? 0
+    modelRotation.uvlock = state.uvlock ?? false;
 
     if (!model.elements) {
       console.warn(`Model ${modelName} for block ${blockName} has no elements`)
@@ -218,9 +183,8 @@ export default function InstancedBlocks({
         if (face.tintindex != undefined) {
           renderElement.tinted[faceName] = true
         }
-        if (face.rotation) {
-          renderElement.faceRotations[faceName] = face.rotation
-        }
+
+        renderElement.faceRotations[faceName] = face.rotation ?? 0
       }
 
       renderData.push(renderElement)
@@ -230,54 +194,25 @@ export default function InstancedBlocks({
   return (
     <>
       {renderData.map((element: RenderElement, index: number) => {
-        const geometry = new THREE.BoxGeometry(element.size[0], element.size[1], element.size[2])
-        centerGeometry(element, geometry)
-        applyRotations(element, geometry)
+        const textureMap = new Map<string, number>() // texture URL → materialIndex
+        const materials: THREE.Material[] = []
 
-        // adjust uvs
-        const uvAttribute = geometry.attributes.uv
-        let faceCounter = 0
-        for (const [faceName, face] of Object.entries(element.uvs)) {
-          const [u1, v1, u2, v2] = face ? face : [0, 0, 16, 16]
-        
-          // Each face uses 4 vertices in the order:
-          // 0 1
-          // 2 3
-          let order = [0, 1, 3, 2]
-          if (element.faceRotations[faceName] || true) {
-            const rotation = -(element.faceRotations[faceName] ?? 0) + 360
-            order = order.map(i => (i + rotation / 90) % 4)
-          }
-          for (let i = 0; i < 4; i++) {
-            const u = (order[i] === 0 || order[i] === 3) ? u1 : u2
-            const v = (order[i] === 0 || order[i] === 1) ? v1 : v2
-            const xy: THREE.Vector2 = new THREE.Vector2(u / 16, 1 - (v / 16))
-            
-            uvAttribute.setXY(faceCounter * 4 + i, xy.x, xy.y)
-            uvAttribute.needsUpdate = true 
-          }
-          faceCounter += 1
-        }
-
-        const materials: THREE.MeshStandardMaterial[] = []
-
-        for (const faceName of ["east", "west", "up", "down", "south", "north"]) {
+        for (const faceName of Object.keys(FACE_DEFS) as FaceName[]) {
           const url = element.textures[faceName]
-          const texture = url
-            ? new THREE.TextureLoader().load(url, (data) => {
-                data.magFilter = THREE.NearestFilter
-                data.minFilter = THREE.NearestFilter
-                if (data.height > data.width) {
-                    data.repeat.set(1, data.width / data.height)
-                }
-              })
-            : emptyTexture
-
-          const material = element.tinted[faceName]
+          if (!url) continue
+          if (!textureMap.has(url)) {
+            const texture = new THREE.TextureLoader().load(url)
+            texture.magFilter = THREE.NearestFilter
+            texture.minFilter = THREE.NearestFilter
+            const mat = element.tinted[faceName]
             ? new THREE.MeshStandardMaterial({ map: texture, transparent: false, alphaTest: 0.5, color: 0x60bb30 })
             : new THREE.MeshStandardMaterial({ map: texture, transparent: false, alphaTest: 0.5 })
-          materials.push(material)
+            materials.push(mat)
+            textureMap.set(url, materials.length - 1)
+          }
         }
+
+        const geometry = buildElementGeometry(element, textureMap)
 
         return (
           <instancedMesh
@@ -290,13 +225,6 @@ export default function InstancedBlocks({
       })}
     </>
   )
-}
-
-function centerGeometry(element: RenderElement, geometry: THREE.BufferGeometry): void {
-  geometry.translate(element.pos[0], element.pos[1], element.pos[2])
-  // block and not element should be centered a 0
-  geometry.translate(element.size[0] / 2, element.size[1] / 2, element.size[2] / 2)
-  geometry.translate(-0.5, -0.5, -0.5)
 }
 
 function determineBlockState(resourceBlock: ResourceBlock, paletteBlock: PaletteBlock): any[] {
@@ -338,33 +266,4 @@ function matchesProperties(variantProperties: Record<string, string>, blockPrope
     }
   }
   return true
-}
-
-
-function applyRotations(element: RenderElement, geometry: THREE.BufferGeometry): void {
-  if (element.rotation) {
-    // Tranlate the element so that the rotation origin is at the world origin, apply the rotation, then translate back
-    const origin = new THREE.Vector3(element.rotation.origin[0] - 0.5, element.rotation.origin[1] - 0.5, element.rotation.origin[2] - 0.5)
-    geometry.translate(-origin.x, -origin.y, -origin.z)
-
-    if (element.rotation.axis === "x") {
-      geometry.rotateX(THREE.MathUtils.degToRad(element.rotation.angle))
-    } else if (element.rotation.axis === "y") {
-      geometry.rotateY(-THREE.MathUtils.degToRad(-element.rotation.angle))
-    } else if (element.rotation.axis === "z") {
-      geometry.rotateZ(THREE.MathUtils.degToRad(element.rotation.angle))
-    }
-
-    geometry.translate(origin.x, origin.y, origin.z)
-  }
-
-  if (element.modelRotation) {
-    const modelRoationMatrix = new THREE.Matrix4().makeRotationFromEuler(new THREE.Euler(
-      -THREE.MathUtils.degToRad(element.modelRotation.x ?? 0),
-      -THREE.MathUtils.degToRad(element.modelRotation.y ?? 0),
-      -THREE.MathUtils.degToRad(element.modelRotation.z ?? 0),
-      "YXZ"
-    ))
-    geometry.applyMatrix4(modelRoationMatrix)
-  }
 }

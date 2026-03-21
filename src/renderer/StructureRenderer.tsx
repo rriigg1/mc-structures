@@ -1,8 +1,9 @@
-import { useContext, useMemo } from "react"
+import { useContext, useEffect, useMemo } from "react"
 import InstancedBlocks from "./instancing/InstancedBlocks"
 import { Block, PaletteBlock } from "../types/Block"
 import { ResourcePackContext } from "../app/providers/ResourcePackProvider"
 import { groupBlocks } from "../minecraft/blocks/groupBlocks"
+import { useThree } from "@react-three/fiber"
 
 type Props = {
   blocks: Block[]
@@ -12,6 +13,11 @@ type Props = {
 export default function StructureRenderer({ blocks, palette }: Props) {
   const groups = groupBlocks(blocks)
   const resourcePack = useContext(ResourcePackContext)
+  const { gl } = useThree()
+
+  useEffect(() => {
+    gl.shadowMap.needsUpdate = true;
+  }, [gl, blocks, palette])
 
   const filteredGroups = useMemo(() => {
     const result: Record<number, Block[]> = {}

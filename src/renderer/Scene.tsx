@@ -1,9 +1,12 @@
-import { Canvas} from "@react-three/fiber";
+import { Canvas } from "@react-three/fiber";
 import { Environment, OrbitControls, Stats } from "@react-three/drei";
+import { StaticShadows } from "./StaticShadows";
 
 export function Scene({children}: {children?: React.ReactNode}) {
+
     return (
         <Canvas shadows camera={{ position: [-10, 10, 3.4]}}>
+            <StaticShadows/>
             <directionalLight
                 position={[45,90,36]}
                 intensity={2}
