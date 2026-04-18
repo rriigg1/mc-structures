@@ -16,3 +16,69 @@ html, body {
   height: 100%;
   width: 100%;
 }
+
+.header {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  z-index: 10;
+  text-align: center;
+}
+
+.header-button {
+  width: 50px;
+  height: 50px;
+  background: #88c067;
+  border: none;
+  padding: 6px;
+  border-radius: 8px;
+  cursor: pointer;
+  position:relative;
+  margin-top: 0px;
+  margin-bottom: 0px;
+  margin-left: 5px;
+  margin-right: 5px;
+  display:inline-block;
+  vertical-align:middle;
+  align-content: center;
+  font-size: 36px;
+  font-weight: bold;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  transition: all 0.3s ease;
+}
+
+.upload-button:before,
+.upload-button:after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background:#222;
+}
+.upload-button:before{
+    width: 4px;
+    margin: 8px auto;
+}
+.upload-button:after{
+    margin: auto 8px;
+    height: 4px;
+}
+
+.header-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+}
+
+.header-button img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}

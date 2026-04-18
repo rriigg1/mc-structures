@@ -14,7 +14,6 @@ export function buildElementGeometry(element: RenderElement, textureMap: Map<str
     const geo = new THREE.BufferGeometry()
 
     for (const faceName of Object.keys(FACE_DEFS) as FaceName[]) {
-
         if (!element.textures[faceName]) continue
         if (cullFaces?.[faceName]) continue
 

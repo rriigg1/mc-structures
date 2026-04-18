@@ -16,6 +16,7 @@ ${\color{red}\huge{\textsf{Disclaimer: The code was written with the assistance 
     - Block variants
     - Mulitpart blocks
     - Tinted textures
+- Generation of basic outline for a house
 
 ### Known issues:
 - Half-transparency not working correctly (stained glass)
@@ -23,4 +24,11 @@ ${\color{red}\huge{\textsf{Disclaimer: The code was written with the assistance 
 ### Planned:
 - Support for tile-entities
 - Selection of resource pack
-- Better chaching (maybe for models?)
+- Better caching (maybe for models?)
+- Improve random generation
+    - Gable roof generation
+    - More complicated house layouts
+    - Details
+    - More variaty
+    - Control over random generation
+

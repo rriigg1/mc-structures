@@ -200,6 +200,8 @@ export async function loadResourcePack(url: string): Promise<{
     blocks: blocks.length
   })
 
+  console.debug(blockMap)
+
   return { textures, blockMap }
 }
 
