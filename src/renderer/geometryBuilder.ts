@@ -28,6 +28,7 @@ export function buildElementGeometry(element: RenderElement, textureMap: Map<str
         })
 
         const normal = def.dir.clone()
+        let rotatedNormal = normal.clone()
 
         if (element.rotation) {
             const origin = new THREE.Vector3(...element.rotation.origin).subScalar(0.5)
@@ -44,7 +45,7 @@ export function buildElementGeometry(element: RenderElement, textureMap: Map<str
             verts.forEach(v => {
                 v.sub(origin).applyMatrix4(m).add(origin)
             })
-            normal.applyMatrix4(m)
+            rotatedNormal = rotatedNormal.applyMatrix4(m)
         }
 
 
@@ -58,12 +59,12 @@ export function buildElementGeometry(element: RenderElement, textureMap: Map<str
             )
             const m = new THREE.Matrix4().makeRotationFromEuler(euler)
             verts.forEach(v => v.applyMatrix4(m))
-            normal.applyMatrix4(m)
+            rotatedNormal = rotatedNormal.applyMatrix4(m)
         }
 
         verts.forEach(v => {
             positions.push(v.x, v.y, v.z)
-            normals.push(normal.x, normal.y, normal.z)
+            normals.push(rotatedNormal.x, rotatedNormal.y, rotatedNormal.z)
         })
 
 
@@ -83,23 +84,27 @@ export function buildElementGeometry(element: RenderElement, textureMap: Map<str
         faceUVs = rotateUVs(faceUVs, element.faceRotations[faceName])
 
         // really hacky but I haven't fully understood the reprojection yet
-        // TODO: might still be wrong in some cases: (What about x=270? Is north different from south in the x=90 case?)
         if (element.modelRotation.uvlock) {
             const center = new THREE.Vector2(0.5, 0.5)
-            const isTopOrBottom = faceName == "up" || faceName == "down"
-            const isSide = faceName == "east" || faceName == "west" || faceName == "north" || faceName == "south"
             let angle = undefined
-            if (isTopOrBottom && (!element.modelRotation.x || element.modelRotation.x == 180)) {
-                angle = -(element.modelRotation.y ?? 0)
-            } else if (isSide && (!element.modelRotation.x || element.modelRotation.x == 180)) {
-                angle = element.modelRotation.x
-            } else if (isTopOrBottom && element.modelRotation.x == 90) {
-                angle = 180
-            } else if (element.modelRotation.x == 90) {
-                if (faceName == "north" || faceName == "south") {
-                    angle = 180 + (element.modelRotation.y ?? 0)
-                } else {
-                    angle = faceName == "east" ? 270 : 90
+
+            angle = -((rot.y ?? 0) * normal.y)
+                    - ((rot.x ?? 0) * normal.x);
+
+            if (rot.x == 180) {
+                angle += rot.x * normal.z;
+                if (rot.y == 90 || rot.y == 270) {
+                    angle += rot.x * normal.y;
+                }
+            }
+
+            if (rot.x == 90) {
+                angle += (180 + (rot.y ?? 0)) * normal.y;
+                if (normal.z > 0) {
+                    angle -= (rot.y ?? 0) * normal.z;
+                }
+                if (normal.z < 0) {
+                    angle -= (180 + (rot.y ?? 0)) * normal.z;
                 }
             }
 
