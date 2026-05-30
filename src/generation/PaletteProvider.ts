@@ -1,4 +1,4 @@
-import { Block } from "@react-three/fiber/dist/declarations/src/core/utils"
+import { random, randomChoice } from "./RandomUtils"
 
 type PaletteEntry = {
     block: string,
@@ -30,7 +30,7 @@ export class BlockPalette {
     }
 
     public samplePalette(): {block: PaletteEntry, index: number} {
-        const rand = Math.random() * this.weightSum
+        const rand = random() * this.weightSum
         let sum = 0
         let index = 0
         for (const entry of this.blocks) {
@@ -89,8 +89,7 @@ export class PaletteProvider {
     ]
 
     public static getRandomPalette(): BlockPalette {
-        const i = Math.floor(Math.random() * PaletteProvider.PALETTES.length)
-        return PaletteProvider.PALETTES[i]
+        return randomChoice(PaletteProvider.PALETTES)
     }
 
     public static getRandomPaletteWithProperties(predicate: (palette: BlockPalette) => boolean): BlockPalette {
@@ -98,8 +97,7 @@ export class PaletteProvider {
         if (filtered.length === 0) {
             throw new Error("No palettes matching criteria")
         }
-        const i = Math.floor(Math.random() * filtered.length)
-        return filtered[i]
+        return randomChoice(filtered)
     }
 
     public static getRandomPillarPalette(): BlockPalette {

@@ -22,9 +22,9 @@ ${\color{red}\huge{\textsf{Disclaimer: The code was written with the assistance 
 - Half-transparency not working correctly (stained glass)
 
 ### Planned:
-- Support for tile-entities
 - Selection of resource pack
 - Better caching (maybe for models?)
+- Support for tile-entities
 - Improve random generation
     - Gable roof generation
     - More complicated house layouts

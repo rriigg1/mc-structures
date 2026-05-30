@@ -1,17 +1,33 @@
-import { sub } from "three/tsl"
 import { Dimensions } from "../types/RandomGeneration"
+
+var seed: number = Date.now();
+
+export function random() {
+    var x = Math.sin(seed++) * 10000;
+    return x - Math.floor(x);
+}
+
+export function getRandomInt(min: number, max: number): number {
+    min = Math.ceil(min);
+    max = Math.floor(max);
+    return Math.floor(random() * (max - min)) + min;
+}
+
+export function randomChoice<T>(arr: T[]): T {
+    return arr[Math.floor(random() * arr.length)];
+}
 
 export function getRandomDimensions(): Dimensions {
   return {
-    width: Math.floor(Math.random() * 15) + 5,
-    height: Math.floor(Math.random() * 2) + 4,
-    depth: Math.floor(Math.random() * 10) + 5,
+    width: getRandomInt(5, 20),
+    height: getRandomInt(4, 6),
+    depth: getRandomInt(5, 15),
   }
 }
 
 export function getRandomSubdivision(length: number, symmetric: boolean = false, maxLength: number = 7, minLength: number = 3): number[] {
     const subdivisions = []
-    if (length <= maxLength && Math.random() < 0.7) {
+    if (length <= maxLength && random() < 0.7) {
         return [length]
     }
 
@@ -45,7 +61,7 @@ export function getRandomSubdivision(length: number, symmetric: boolean = false,
             subdivisions.push(halfMiddleLength * 2 + 2)
             subdivisions.push(...firstHalf.reverse())
         } else {
-            if (Math.random() < 0.5) {
+            if (random() < 0.5) {
                 // Place gap in the middle
                 const middleLength = getRandomNumber(Math.floor(minLength / 2), Math.floor((maxLength - 1) / 2)) * 2 + 1
 
@@ -74,7 +90,7 @@ export function getRandomSubdivision(length: number, symmetric: boolean = false,
         let remainingLength = length
         while (remainingLength >= minLength) {
             const splitPossible = remainingLength - minLength + 1 >= minLength
-            if (!splitPossible || (remainingLength <= maxLength && Math.random() < 0.7)) {
+            if (!splitPossible || (remainingLength <= maxLength && random() < 0.7)) {
                 subdivisions.push(remainingLength)
                 remainingLength = 1
                 break
@@ -99,9 +115,9 @@ export function getRandomSubdivision(length: number, symmetric: boolean = false,
 
 
 export function getRandomNumber(min: number, max: number, reduceEveness: boolean = true): number {
-    let rand = Math.floor(Math.random() * (max - min + 1)) + min
+    let rand = getRandomInt(min, max + 1)
     if (reduceEveness && rand % 2 === 0) {
-        rand = Math.floor(Math.random() * (max - min + 1)) + min
+        rand = getRandomInt(min, max + 1)
     }
     return rand
 }
