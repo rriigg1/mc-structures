@@ -1,6 +1,6 @@
 import { random, randomChoice } from "./RandomUtils"
 
-type PaletteEntry = {
+export type PaletteEntry = {
     block: string,
     state?: Record<string, string>,
     weight: number,

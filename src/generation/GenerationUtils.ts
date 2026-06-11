@@ -49,3 +49,13 @@ export function joinGenerationResults(results: GenerationResult[]): GenerationRe
 
     return joinedResults
 }
+
+export function toCumulativeSubdivisions(subdivisions: number[]): number[] {
+    let cumulative = 0
+    let cumulativeSubdivisions = [0]
+    for (let subdivision of subdivisions) {
+        cumulative += subdivision - 1
+        cumulativeSubdivisions.push(cumulative)
+    }
+    return cumulativeSubdivisions
+}

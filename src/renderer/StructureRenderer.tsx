@@ -1,4 +1,4 @@
-import { useContext, useEffect, useMemo } from "react"
+import { useContext, useEffect, useMemo, useRef } from "react"
 import InstancedBlocks from "./instancing/InstancedBlocks"
 import { Block, PaletteBlock } from "../types/Block"
 import { ResourcePackContext } from "../app/providers/ResourcePackProvider"
@@ -14,10 +14,39 @@ export default function StructureRenderer({ blocks, palette }: Props) {
   const groups = groupBlocks(blocks)
   const resourcePack = useContext(ResourcePackContext)
   const { gl } = useThree()
+  const shadowUpdateTimeout = useRef<NodeJS.Timeout | null>(null)
+  const pendingFrameId = useRef<number | null>(null)
 
   useEffect(() => {
-    gl.shadowMap.needsUpdate = true;
-  }, [gl, blocks, palette])
+    // Only update shadows if we have both palette and resource pack loaded
+    if (!palette || !resourcePack) {
+      return
+    }
+
+    // Cancel any pending shadow updates
+    if (shadowUpdateTimeout.current) {
+      clearTimeout(shadowUpdateTimeout.current)
+    }
+    if (pendingFrameId.current) {
+      cancelAnimationFrame(pendingFrameId.current)
+    }
+
+    // Debounce with a small delay to catch rapid updates, then defer to next frame
+    shadowUpdateTimeout.current = setTimeout(() => {
+      pendingFrameId.current = requestAnimationFrame(() => {
+        gl.shadowMap.needsUpdate = true;
+      })
+    }, 50)
+
+    return () => {
+      if (shadowUpdateTimeout.current) {
+        clearTimeout(shadowUpdateTimeout.current)
+      }
+      if (pendingFrameId.current) {
+        cancelAnimationFrame(pendingFrameId.current)
+      }
+    }
+  }, [gl, palette, resourcePack, blocks.length])
 
   const filteredGroups = useMemo(() => {
     const result: Record<number, Block[]> = {}
