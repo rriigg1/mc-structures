@@ -14,7 +14,6 @@ export default function StructureRenderer({ blocks, palette }: Props) {
   const groups = groupBlocks(blocks)
   const resourcePack = useContext(ResourcePackContext)
   const { gl } = useThree()
-  const shadowUpdateTimeout = useRef<NodeJS.Timeout | null>(null)
   const pendingFrameId = useRef<number | null>(null)
 
   useEffect(() => {
@@ -23,25 +22,15 @@ export default function StructureRenderer({ blocks, palette }: Props) {
       return
     }
 
-    // Cancel any pending shadow updates
-    if (shadowUpdateTimeout.current) {
-      clearTimeout(shadowUpdateTimeout.current)
-    }
     if (pendingFrameId.current) {
       cancelAnimationFrame(pendingFrameId.current)
     }
 
-    // Debounce with a small delay to catch rapid updates, then defer to next frame
-    shadowUpdateTimeout.current = setTimeout(() => {
-      pendingFrameId.current = requestAnimationFrame(() => {
-        gl.shadowMap.needsUpdate = true;
-      })
-    }, 50)
+    pendingFrameId.current = requestAnimationFrame(() => {
+      gl.shadowMap.needsUpdate = true;
+    })
 
     return () => {
-      if (shadowUpdateTimeout.current) {
-        clearTimeout(shadowUpdateTimeout.current)
-      }
       if (pendingFrameId.current) {
         cancelAnimationFrame(pendingFrameId.current)
       }

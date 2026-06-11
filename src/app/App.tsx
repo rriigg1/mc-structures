@@ -32,7 +32,6 @@ export default function App() {
     const { blocks: parsedBlocks, palette: parsedPalette } = await parseStructure(buffer)
     setBlocks(parsedBlocks)
     setPalette(parsedPalette)
-    console.log(parsedPalette)
   }
 
   function handleGenerate() {
