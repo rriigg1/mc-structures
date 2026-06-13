@@ -4,10 +4,42 @@ import { Vector3 } from "three";
 import { BlockPalette } from "./PaletteProvider";
 import { PaletteBlock } from "../types/Block";
 
+class PaletteMap {
+    map: Map<string, number> = new Map()
+
+    private key(block: PaletteBlock): string {
+        if (block.properties) {
+            const propString = Object.keys(block.properties)
+                .sort()
+                .map(k => `${k}=${block.properties? block.properties[k] : null}`)
+                .join(",")
+            return `${block.name}[${propString}]`
+        } else {
+            return `${block.name}`
+        }
+    }
+
+    set(block: PaletteBlock, value: number): void {
+        this.map.set(this.key(block), value);
+    }
+
+    get(block: PaletteBlock): number | undefined {
+        return this.map.get(this.key(block));
+    }
+
+    has(block: PaletteBlock): boolean {
+        return this.map.has(this.key(block))
+    }
+
+    clear() {
+        this.map.clear()
+    }
+}
+
 export abstract class Texturer {
     semanticMap: SemanticMap
     generationResult: GenerationResult
-    paletteMap: Map<PaletteBlock, number> = new Map()
+    paletteMap: PaletteMap = new PaletteMap()
 
     constructor(semanticMap: SemanticMap, generationResult: GenerationResult) {
         this.semanticMap = semanticMap
@@ -22,13 +54,13 @@ export abstract class Texturer {
         }
     }
 
-    abstract texture(palette: BlockPalette, texturePredicate: (block: SemanticBlock) => boolean): GenerationResult;
+    abstract texture(palette: BlockPalette, texturePredicate: (block: SemanticBlock) => boolean): Texturer;
 
-    textureType(palette: BlockPalette, type: SemanticBlockType): GenerationResult {
+    textureType(palette: BlockPalette, type: SemanticBlockType): Texturer {
         return this.texture(palette, (block) => block.type === type);
     }
 
-    textureGroup(palette: BlockPalette, group: string): GenerationResult {
+    textureGroup(palette: BlockPalette, group: string): Texturer {
         return this.texture(palette, (block) => block.groups?.includes(group) ?? false);
     }
 }
@@ -79,12 +111,33 @@ export function generateBeam(map: SemanticMap, properties: BeamGenerationPropert
         blockProperties.axis = properties.axis
     }
 
-    return generateWall(map, {
-        offset: properties.offset,
-        axis: properties.axis,
-        dimensions: {length: properties.dimensions.length, height: 1},
-        groups: properties.groups ?? ["beam"]
-    }, blockProperties)
+    for (let x = 0; x < properties.dimensions.length; x++) {
+        const pos = properties.axis === "x"
+                ? new Vector3(x + properties.offset.x, properties.offset.y, properties.offset.z)
+                : new Vector3(properties.offset.x, properties.offset.y, x + properties.offset.z)
+        map.set(pos, {type: SemanticBlockType.BEAM, groups: properties.groups ?? ["beam"], properties: blockProperties})
+    }
+
+    return map
+}
+
+export type TriangleGableGenerationProperties = BeamGenerationProperties
+
+export function generateTriangleGable(map: SemanticMap, properties: TriangleGableGenerationProperties, blockProperties: Record<string, any> = {}): SemanticMap {
+    const length = properties.dimensions.length
+    const height = Math.ceil(length / 2) - 1
+    const direction: Vector3 = properties.axis === "x" ? new Vector3(1, 0, 0) : new Vector3(0, 0, 1)
+
+    for (let y = 0; y < height; y++) {
+        const rowLength = length - 2 * y - 2
+        const offset = y + 1
+        for (let i = 0; i < rowLength; i++) {
+            const pos = properties.offset.clone().addScaledVector(direction, i + offset).add(new Vector3(0, y, 0))
+            map.set(pos, {type: SemanticBlockType.GABLE, groups: properties.groups ?? ["wall", "gable"], properties: blockProperties})
+        }
+    }
+
+    return map
 }
 
 export type PillarGenerationProperties = GenerationPropertiesBase & {

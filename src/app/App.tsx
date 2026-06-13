@@ -15,8 +15,6 @@ export default function App() {
   const [blocks,setBlocks] = useState<Block[]>([])
   const [palette, setPalette] = useState<Record<number, PaletteBlock>>({})
   
-  console.log(PaletteProvider.getRandomPalette())
-
   useEffect(() => {
     async function loadDefault() {
       const response = await fetch(import.meta.env.BASE_URL + "default_structure.nbt")

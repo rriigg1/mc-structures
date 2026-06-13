@@ -1,10 +1,16 @@
 import { PaletteProvider } from "./PaletteProvider"
-import { getRandomDimensions, getRandomSubdivision, random, randomChoice } from "./RandomUtils"
-import { buildPillarFrame, buildSimpleFrame, FrameBuilderProperties } from "./FrameBuilder"
-import { joinGenerationResults, GenerationResult } from "./GenerationUtils"
+import { getRandomDimensions, getRandomInt, getRandomSubdivision, random, randomChoice } from "./RandomUtils"
+import {
+    buildPillarFrame, PillarFrameProperties,
+    buildSimpleFrame, SimpleFrameProperties,
+    buildSimpleGable, SimpleGableProperties,
+    buildSimpleGableRoof, SimpleGableRoofProperties
+} from "./FrameBuilder"
+import { GenerationResult } from "./GenerationUtils"
 import { Texturer } from "./GenerationBase"
-import { SemanticMap } from "../types/RandomGeneration"
-import { RandomTexturer } from "./RandomTexturer"
+import { SemanticBlockType, SemanticMap } from "../types/RandomGeneration"
+import { RandomTexturer } from "./Texturers/RandomTexturer"
+import { SolidTexturer } from "./Texturers/SolidTexturer"
 import { Vector3 } from "three"
 
 
@@ -16,25 +22,17 @@ export function generateFrame(): GenerationResult {
     let xSubdivisions = getRandomSubdivision(dimensions.width, xShorterThanZ || random() < 0.2)
     let zSubdivisions = getRandomSubdivision(dimensions.depth, !xShorterThanZ || random() < 0.2)
 
-    // Get palettes
-    const wallPalette = PaletteProvider.getRandomPaletteWithProperties(palette => !palette.isPillarsOnly() && palette.getMaterial() !== "wood")
-    const pillarPalette = PaletteProvider.getRandomPillarPalette()
-    const topWallMaterial = randomChoice(["wood", "adobe"])
-    const topWallPalette = PaletteProvider.getRandomPaletteWithProperties(palette => !palette.isPillarsOnly() && palette.getMaterial() === topWallMaterial)
-
-    const topFrame = random() < 0.5
-    const bottomFrame = topFrame && random() < 0.5
+    const topBeam = random() < 0.7
+    const bottomBeam = topBeam && random() < 0.5
+    const bottomBeamEnd = bottomBeam && random() < 0.2
+    const topBeamEnd = topBeam && random() < 0.5
 
     const houseMap: SemanticMap = new SemanticMap()
 
-    const lowerFrameProperties: FrameBuilderProperties = {
+    const lowerFrameProperties: SimpleFrameProperties = {
         offset: new Vector3(0, 0, 0),
         groups: ["floor1"],
-        dimensions,
-        xSubdivisions: xSubdivisions,
-        zSubdivisions: zSubdivisions,
-        bottomFrame,
-        topFrame
+        dimensions
     }
 
     buildSimpleFrame(houseMap, lowerFrameProperties)
@@ -45,32 +43,72 @@ export function generateFrame(): GenerationResult {
     xSubdivisions[xSubdivisions.length - 1] += 1
     zSubdivisions[zSubdivisions.length - 1] += 1
 
-    const upperFrameProperties: FrameBuilderProperties = {
+    const topFloorDimensions = {width: dimensions.width + 2, height: dimensions.height, depth: dimensions.depth + 2}
+
+    const upperFrameProperties: PillarFrameProperties = {
         offset: new Vector3(-1, dimensions.height, -1),
         groups: ["floor2"],
-        dimensions: {width: dimensions.width + 2, height: dimensions.height, depth: dimensions.depth + 2},
+        dimensions: topFloorDimensions,
         xSubdivisions: xSubdivisions,
         zSubdivisions: zSubdivisions,
-        bottomFrame: false,
-        topFrame: true
+        bottomBeam: bottomBeam,
+        topBeam: topBeam,
+        bottomBeamEnd: bottomBeamEnd,
+        topBeamEnd: topBeamEnd
     }
 
     buildPillarFrame(houseMap, upperFrameProperties)
 
 
-    const texturer: Texturer = new RandomTexturer(houseMap, {blocks: [], palette: {0: {name: "minecraft:air", properties: {}}}})
 
+    const gableProperties: SimpleGableProperties = {
+        offset: new Vector3(-1, dimensions.height + dimensions.height, -1),
+        groups: ["floor2"],
+        dimensions: topFloorDimensions
+    }
+
+    buildSimpleGable(houseMap, gableProperties)
+
+    const gableRoofProperties: SimpleGableRoofProperties = {
+        offset: new Vector3(-1, dimensions.height + dimensions.height, -1),
+        dimensions: topFloorDimensions,
+        endOverhang: getRandomInt(1, 3),
+        sideOverhang: getRandomInt(0, 2)
+    }
+
+    buildSimpleGableRoof(houseMap, gableRoofProperties)
+
+
+    const generationResult: GenerationResult = {blocks: [], palette: {0: {name: "minecraft:air", properties: {}}}}
+
+    const randomTexturer: Texturer = new RandomTexturer(houseMap, generationResult)
+    const solidTexturer: Texturer = new SolidTexturer(houseMap, generationResult)
+
+    const texturers = [randomTexturer, solidTexturer]
+
+    // Get palettes
+    const wallPalette = PaletteProvider.getRandomPaletteWithProperties(palette => !palette.isPillarsOnly() && palette.getMaterial() !== "wood")
+    const pillarPalette = PaletteProvider.getRandomPillarPalette()
+    const topWallMaterial = randomChoice(["wood", "adobe"])
+    const topWallPalette = PaletteProvider.getRandomPaletteWithProperties(palette => !palette.isPillarsOnly() && palette.getMaterial() === topWallMaterial)
+    const roofPalette = PaletteProvider.getRandomMaterialPalette()
+    
     // texture bottom floor
-    texturer.texture(wallPalette, (block) => block.groups.includes("wall") && block.groups.includes("floor1"))
+    randomChoice(texturers).texture(wallPalette, (block) => block.groups.includes("wall") && block.groups.includes("floor1"))
 
     // texture top floor
-    texturer.texture(topWallPalette, (block) => block.groups.includes("wall") && block.groups.includes("floor2"))
-    texturer.textureGroup(pillarPalette, "pillar")
-    texturer.textureGroup(pillarPalette, "beam")
+    randomChoice(texturers).texture(topWallPalette, (block) => block.groups.includes("wall") && block.groups.includes("floor2"))
+    randomChoice(texturers)
+            .textureGroup(pillarPalette, "pillar")
+            .textureGroup(pillarPalette, "beam")
 
-    console.log("Generated frame with dimensions", dimensions, "and subdivisions", xSubdivisions, zSubdivisions)
-    console.log(texturer.semanticMap)
-    console.log(texturer.generationResult)
+    randomChoice(texturers)
+        .textureType(roofPalette, SemanticBlockType.ROOF)
+    
 
-    return texturer.generationResult
+    console.debug("Generated frame with dimensions", dimensions, "and subdivisions", xSubdivisions, zSubdivisions)
+    
+    console.log(generationResult)
+
+    return generationResult
 }

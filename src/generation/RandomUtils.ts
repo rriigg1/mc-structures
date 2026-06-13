@@ -2,29 +2,55 @@ import { Dimensions } from "../types/RandomGeneration"
 
 var seed: number = Date.now();
 
+/**
+ * @returns Random number between 0 and 1
+ */
 export function random() {
     var x = Math.sin(seed++) * 10000;
     return x - Math.floor(x);
 }
 
+/**
+ * 
+ * @param min Minimum number
+ * @param max Maximum number
+ * @returns A random integer between min and max including min but excluding max.
+ */
 export function getRandomInt(min: number, max: number): number {
     min = Math.ceil(min);
     max = Math.floor(max);
     return Math.floor(random() * (max - min)) + min;
 }
 
+/**
+ * 
+ * @param arr The array to pick a random entry from.
+ * @returns An entry from the array picked at random.
+ */
 export function randomChoice<T>(arr: T[]): T {
     return arr[Math.floor(random() * arr.length)];
 }
 
-export function getRandomDimensions(): Dimensions {
+/**
+ * TODO: Currently the ranges for the dimensions are fixed
+ * @returns Random dimensions.
+ */
+export function getRandomDimensions(reduceEveness: number = 0.5): Dimensions {
   return {
-    width: getRandomInt(5, 20),
+    width: getRandomNumber(6, 20, reduceEveness),
     height: getRandomInt(4, 6),
-    depth: getRandomInt(5, 15),
+    depth: getRandomNumber(5, 15, reduceEveness),
   }
 }
 
+/**
+ * Randomly subdivides a given length into parts with given minimum and maximum length.
+ * @param length The total length to subdevide.
+ * @param symmetric If set to true the returned subdivision is symetric.
+ * @param maxLength The maximum length of an intervall in the result.
+ * @param minLength The minimum length of an intervall in the result. Problems may arise if maxLength + 1 < 2 * minLength since then an intervall of length maxLength may not be subdivided into two intervalls of length minLength.
+ * @returns An arrray of the length of the resulting intervalls.
+ */
 export function getRandomSubdivision(length: number, symmetric: boolean = false, maxLength: number = 7, minLength: number = 3): number[] {
     const subdivisions = []
     if (length <= maxLength && random() < 0.7) {
@@ -102,7 +128,7 @@ export function getRandomSubdivision(length: number, symmetric: boolean = false,
         }
 
         if (remainingLength > 1) {
-            console.log("Remaining length after subdivision:", remainingLength)
+            console.warn("Remaining length after subdivision:", remainingLength)
         }
     }
 
@@ -113,11 +139,22 @@ export function getRandomSubdivision(length: number, symmetric: boolean = false,
     return subdivisions
 }
 
-
-export function getRandomNumber(min: number, max: number, reduceEveness: boolean = true): number {
+/**
+ * Returns a random integer in the given range (including both ends) but allows to reduce the eveness by 
+ * @param min Minimum number possible as a result.
+ * @param max Maximum number possible as a result.
+ * @param reduceEveness By how much the chance of getting a even number is reduced.
+ * @returns 
+ */
+export function getRandomNumber(min: number, max: number, reduceEveness: number = 0.6): number {
     let rand = getRandomInt(min, max + 1)
-    if (reduceEveness && rand % 2 === 0) {
-        rand = getRandomInt(min, max + 1)
+    if (rand % 2 === 0 && reduceEveness > random()) {
+        // randomly decrease or increase by one and respect the minimum and maximum
+        if (rand !== min && (random() < 0.5 || rand === max)) {
+            rand--
+        } else if (rand !== max) {
+            rand++
+        }
     }
     return rand
 }

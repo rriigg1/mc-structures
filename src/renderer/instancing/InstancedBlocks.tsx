@@ -21,13 +21,6 @@ export default function InstancedBlocks({
   const refs = useRef(new Map<number, THREE.InstancedMesh>())
   const resourcePack = useContext(ResourcePackContext)
 
-  const emptyTexture = useMemo(() => {
-    return new THREE.TextureLoader().load("empty_texture.png", (data) => {
-      data.magFilter = THREE.NearestFilter
-      data.minFilter = THREE.NearestFilter
-    });
-  }, []);
-
   useEffect(() => {
     const matrix = new THREE.Matrix4()
 

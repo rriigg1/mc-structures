@@ -10,14 +10,24 @@ export type SemanticBlock = {
   type: SemanticBlockType,
   properties?: Record<string, any>,
   groups: string[]
+  blockShape?: SemanticBlockShape
+}
+
+export enum SemanticBlockShape {
+  FULL_BLOCK = "full",
+  SLAB = "slab",
+  STAIRS = "stairs",
+  PLANKS = "planks",
+  LOG = "log",
+  CHISELED = "chiseled",
+  SMOOTH = "smooth"
 }
 
 export enum SemanticBlockType {
   AIR = "air",
   WALL = "wall",
   PILLAR = "pillar",
-  BEAM_X = "beam_x",
-  BEAM_Z = "beam_z",
+  BEAM = "beam",
   DECORATION = "decoration",
   GABLE = "gable",
   ROOF = "roof",
